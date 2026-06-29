@@ -1,40 +1,55 @@
 -- ============================================
--- Script Base para Roblox
+-- Script Base Mejorado para Roblox
 -- Autor: UnknownDiour
 -- Repositorio: mis-scripts-roblox
 -- ============================================
 
-print("🚀 Script cargado correctamente!")
-print("👤 Usuario: " .. game.Players.LocalPlayer.Name)
+print("🔄 Iniciando script...")
 
 -- ============================================
--- FUNCIÓN: Detectar jugadores cercanos
+-- ESPERAR A QUE EL JUGADOR ESTÉ LISTO
+-- ============================================
+local player = game.Players.LocalPlayer
+if not player then
+    print("⏳ Esperando al jugador...")
+    player = game.Players:WaitForChild("LocalPlayer")
+end
+
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+print("🚀 Script cargado correctamente!")
+print("👤 Usuario: " .. player.Name)
+
+-- ============================================
+-- FUNCIÓN MEJORADA: Detectar jugadores cercanos
 -- ============================================
 local function getNearbyPlayers(radius)
     local players = {}
-    local character = game.Players.LocalPlayer.Character
-    if not character then return players end
+    if not rootPart or not rootPart.Parent then 
+        print("⚠️ Personaje no disponible")
+        return players 
+    end
     
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return players end
-    
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer then
-            local targetChar = player.Character
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            local targetChar = otherPlayer.Character
             if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
-                local distance = (rootPart.Position - targetChar.HumanoidRootPart.Position).Magnitude
+                local targetRoot = targetChar.HumanoidRootPart
+                local distance = (rootPart.Position - targetRoot.Position).Magnitude
+                
                 if distance <= radius then
                     table.insert(players, {
-                        Player = player,
+                        Player = otherPlayer,
                         Distance = distance,
-                        Character = targetChar
+                        Character = targetChar,
+                        RootPart = targetRoot
                     })
                 end
             end
         end
     end
     
-    -- Ordenar por distancia (más cercano primero)
     table.sort(players, function(a, b) 
         return a.Distance < b.Distance 
     end)
@@ -45,9 +60,9 @@ end
 -- ============================================
 -- FUNCIÓN: Obtener posición de la cabeza
 -- ============================================
-local function getHeadPosition(character)
-    if not character then return nil end
-    local head = character:FindFirstChild("Head")
+local function getHeadPosition(targetChar)
+    if not targetChar then return nil end
+    local head = targetChar:FindFirstChild("Head")
     if head then
         return head.Position
     end
@@ -55,23 +70,35 @@ local function getHeadPosition(character)
 end
 
 -- ============================================
+-- FUNCIÓN: Verificar si el script está en un juego
+-- ============================================
+local function isInGame()
+    return game.Players.NumPlayers > 0
+end
+
+-- ============================================
 -- EJEMPLO DE USO (descomentar para probar)
 -- ============================================
 --[[
-while wait(1) do
+while task.wait(2) do
+    if not isInGame() then
+        print("⏳ Esperando jugadores...")
+        continue
+    end
+    
     local nearby = getNearbyPlayers(50)
     if #nearby > 0 then
         local closest = nearby[1]
         local headPos = getHeadPosition(closest.Character)
         if headPos then
-            print("🎯 Jugador más cercano: " .. closest.Player.Name .. 
+            print("🎯 Jugador: " .. closest.Player.Name .. 
                   " | Distancia: " .. math.floor(closest.Distance) .. " studs")
-            print("📌 Posición de cabeza: " .. tostring(headPos))
         end
     else
-        print("🔍 No hay jugadores cerca")
+        print("🔍 No hay jugadores cerca (radio: 50 studs)")
     end
 end
 --]]
 
 print("✅ Script listo para usar!")
+print("💡 Para activar el escaneo, elimina los comentarios --[[ y ]]-- al final")
